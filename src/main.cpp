@@ -23,8 +23,30 @@
  ******************************************************************************/
 
 #include <iostream>
+#include <windows.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Gaming.Input.h>
+
+using namespace winrt;
+using namespace Windows::Gaming::Input;
+using namespace Windows::Foundation::Collections;
 
 int main(int argc, char **argv)
 {
+    std::cout << "Initialising..." << std::endl;
+    std::cout << "Done" << std::endl;
+
+    bool wheelFound = false;
+    std::cout << "Scanning for wheels..." << std::endl;
+    while (!wheelFound)
+    {
+        auto wheels = RacingWheel::RacingWheels();
+        if (wheels.Size() > 0)
+        {
+            wheelFound = true;
+            std::cout << "Wheel Detected" << std::endl;
+        }
+    }
+
     return EXIT_SUCCESS;
 }

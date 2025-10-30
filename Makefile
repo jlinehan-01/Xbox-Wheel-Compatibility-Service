@@ -26,7 +26,7 @@ clean:
 	rmdir /Q /S build
 
 format:
-	clang-format -style=file -i *.cpp *.h
+	clang-format -style=file -i src/*.cpp src/*.h
 
 run:
 	cmd /c .\build\bin\Debug\XboxWheelCompatibilityService.exe
