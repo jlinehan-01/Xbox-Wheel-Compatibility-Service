@@ -15,20 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /******************************************************************************
- * main.cpp                                                                   *
+ * wheel.cpp                                                                  *
  *                                                                            *
- * The entry point of the program                                             *
+ * Wrapper for wheel functionality                                            *
  *                                                                            *
  * Author: Joshua Linehan                                                     *
  ******************************************************************************/
 
-#include "wheel_manager.h"
+#include "wheel.h"
 
-int main(int argc, char **argv)
+Wheel::Wheel(RacingWheel racingWheel) : racingWheel(racingWheel) {}
+
+// returns the racingWheel associated with a wheel object
+RacingWheel Wheel::getRacingWheel()
 {
-    std::cout << "Initialising..." << std::endl;
-    std::cout << "Done" << std::endl;
-
-    WheelManager wheelManager;
-    wheelManager.start();
-}
+    return this->racingWheel;
+};

@@ -15,20 +15,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /******************************************************************************
- * main.cpp                                                                   *
+ * wheel.h                                                                    *
  *                                                                            *
- * The entry point of the program                                             *
+ * Wrapper for wheel functionality                                            *
  *                                                                            *
  * Author: Joshua Linehan                                                     *
  ******************************************************************************/
 
-#include "wheel_manager.h"
+#ifndef WHEEL_H
+#define WHEEL_H
 
-int main(int argc, char **argv)
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Gaming.Input.h>
+
+using namespace winrt;
+using namespace Windows::Gaming::Input;
+
+class Wheel
 {
-    std::cout << "Initialising..." << std::endl;
-    std::cout << "Done" << std::endl;
+  private:
+    RacingWheel racingWheel;
 
-    WheelManager wheelManager;
-    wheelManager.start();
-}
+  public:
+    Wheel(RacingWheel racingWheel);
+    // returns the racingWheel associated with a wheel object
+    RacingWheel getRacingWheel();
+};
+
+#endif
