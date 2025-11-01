@@ -36,62 +36,90 @@ WheelManager::~WheelManager()
     stop();
 }
 
+// scans for racing wheels
+void WheelManager::run()
+{
+    while (active.load())
+    {
+        // get wheels
+        auto racingWheels = RacingWheel::RacingWheels();
+        // compare to each recorded wheels
+        int wheelMap[MAX_WHEELS] = {
+            WHEEL_NOT_FOUND, WHEEL_NOT_FOUND, WHEEL_NOT_FOUND, WHEEL_NOT_FOUND,
+            WHEEL_NOT_FOUND, WHEEL_NOT_FOUND, WHEEL_NOT_FOUND, WHEEL_NOT_FOUND};
+        int numWheels = wheels.size();
+        for (int i = 0; i < racingWheels.Size(); i++)
+        {
+            bool wheelFound = false;
+            for (int j = 0; j < numWheels; j++)
+            {
+                if (wheels[j]->getRacingWheel() == racingWheels.GetAt(i))
+                {
+                    wheelFound = true;
+                    wheelMap[j] = i;
+                    break;
+                }
+            }
+            // handle new wheels
+            if (!wheelFound)
+            {
+                wheels.push_back(
+                    std::make_unique<Wheel>(racingWheels.GetAt(i)));
+                wheels.back()->start();
+            }
+        }
+        // handle disconnected wheels
+        for (int i = numWheels - 1; i >= 0; i--)
+        {
+            if (wheelMap[i] == WHEEL_NOT_FOUND)
+            {
+                wheels[i]->stop();
+                wheels.erase(wheels.begin() + i);
+            }
+        }
+        // sleep until next scan
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(REFRESH_DELAY_MS));
+    }
+}
+
 // starts thread scanning for wheels
 void WheelManager::start()
 {
+    // prevent running if already active
+    if (active.load())
+    {
+        return;
+    }
+
     active.store(true);
     std::cout << "Scanning for wheels..." << std::endl;
-    std::thread thread(
-        [this]
-        {
-            while (active.load())
-            {
-                // get wheels
-                auto racingWheels = RacingWheel::RacingWheels();
-                // compare to each recorded wheels
-                int wheelMap[MAX_WHEELS] = {WHEEL_NOT_FOUND, WHEEL_NOT_FOUND,
-                                            WHEEL_NOT_FOUND, WHEEL_NOT_FOUND,
-                                            WHEEL_NOT_FOUND, WHEEL_NOT_FOUND,
-                                            WHEEL_NOT_FOUND, WHEEL_NOT_FOUND};
-                int numWheels = wheels.size();
-                for (int i = 0; i < racingWheels.Size(); i++)
-                {
-                    bool wheelFound = false;
-                    for (int j = 0; j < numWheels; j++)
-                    {
-                        if (wheels[j].getRacingWheel() == racingWheels.GetAt(i))
-                        {
-                            wheelFound = true;
-                            wheelMap[j] = i;
-                            break;
-                        }
-                    }
-                    // handle new wheels
-                    if (!wheelFound)
-                    {
-                        wheels.push_back(Wheel(racingWheels.GetAt(i)));
-                        std::cout << "Wheel connected" << std::endl;
-                    }
-                }
-                // handle disconnected wheels
-                for (int i = numWheels - 1; i >= 0; i--)
-                {
-                    if (wheelMap[i] == WHEEL_NOT_FOUND)
-                    {
-                        wheels.erase(wheels.begin() + i);
-                        std::cout << "Wheel disconnected" << std::endl;
-                    }
-                }
-                // sleep until next scan
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(REFRESH_DELAY_MS));
-            }
-        });
-    thread.join();
+    thread = std::thread(&WheelManager::run, this);
 }
 
 // sets flag to stop thread
 void WheelManager::stop()
 {
-    active.store(false);
+    if (active.load())
+    {
+        active.store(false);
+        for (int i = 0; i < wheels.size(); i++)
+        {
+            if (wheels[i]->running())
+            {
+                wheels[i]->stop();
+            }
+        }
+        if (thread.joinable())
+        {
+            thread.join();
+        }
+        wheels.clear();
+    }
+}
+
+// returns if the wheel manager is running
+bool WheelManager::running()
+{
+    return active.load();
 }

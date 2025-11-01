@@ -45,7 +45,11 @@ class WheelManager
     static const int WHEEL_NOT_FOUND;
 
     std::atomic<bool> active;
-    std::vector<Wheel> wheels;
+    std::vector<std::unique_ptr<Wheel>> wheels;
+    std::thread thread;
+
+    // scans for racing wheels
+    void run();
 
   public:
     WheelManager();
@@ -54,6 +58,8 @@ class WheelManager
     void start();
     // sets flag to stop thread
     void stop();
+    // returns if the wheel manager is running
+    bool running();
 };
 
 #endif

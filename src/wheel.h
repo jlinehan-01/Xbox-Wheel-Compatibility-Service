@@ -25,6 +25,10 @@
 #ifndef WHEEL_H
 #define WHEEL_H
 
+#include <atomic>
+#include <iostream>
+#include <thread>
+#include <windows.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Gaming.Input.h>
 
@@ -34,12 +38,26 @@ using namespace Windows::Gaming::Input;
 class Wheel
 {
   private:
+    static const DWORD REFRESH_DELAY_MS;
+
     RacingWheel racingWheel;
+    std::atomic<bool> active;
+    std::thread thread;
+
+    // reads and injects input from wheel
+    void run();
 
   public:
     Wheel(RacingWheel racingWheel);
+    ~Wheel();
     // returns the racingWheel associated with a wheel object
     RacingWheel getRacingWheel();
+    // starts thread scanning for wheels
+    void start();
+    // sets flag to stop thread
+    void stop();
+    // returns if the wheel manager is running
+    bool running();
 };
 
 #endif

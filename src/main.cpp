@@ -22,13 +22,62 @@
  * Author: Joshua Linehan                                                     *
  ******************************************************************************/
 
+#include <atomic>
+#include <iostream>
+#include <windows.h>
+
 #include "wheel_manager.h"
+
+static const DWORD SLEEP_DURATION_MS = 100;
+
+static WheelManager *g_wheelManager = nullptr;
+static std::atomic<bool> g_shutdownComplete{false};
+
+BOOL WINAPI controlHandler(DWORD signal);
 
 int main(int argc, char **argv)
 {
     std::cout << "Initialising..." << std::endl;
+    WheelManager wheelManager;
+    g_wheelManager = &wheelManager;
+
+    if (!SetConsoleCtrlHandler(controlHandler, TRUE))
+    {
+        std::cerr << "unable to set control handler" << std::endl;
+    }
     std::cout << "Done" << std::endl;
 
-    WheelManager wheelManager;
     wheelManager.start();
+
+    // keep program running while other threads run
+    while (wheelManager.running())
+    {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(SLEEP_DURATION_MS));
+    }
+
+    while (!g_shutdownComplete.load())
+    {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(SLEEP_DURATION_MS));
+    }
+
+    g_wheelManager = nullptr;
+
+    return EXIT_SUCCESS;
+}
+
+BOOL WINAPI controlHandler(DWORD signal)
+{
+    if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT)
+    {
+        std::cout << "Shutting down..." << std::endl;
+        if (g_wheelManager)
+        {
+            g_wheelManager->stop();
+            g_shutdownComplete.store(true);
+        }
+        return TRUE;
+    }
+    return FALSE;
 }
