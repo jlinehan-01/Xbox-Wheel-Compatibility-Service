@@ -25,10 +25,14 @@
 #include "wheel_manager.h"
 
 const DWORD WheelManager::REFRESH_DELAY_MS = 1000;
+const DWORD WheelManager::TELEMETRY_DELAY_MS = 100;
 const int WheelManager::MAX_WHEELS = 8;
 const int WheelManager::WHEEL_NOT_FOUND = -1;
 
-WheelManager::WheelManager() : active{false}, wheels{} {}
+WheelManager::WheelManager(bool telemetryMode)
+    : active{false}, wheels{}, telemetryMode{telemetryMode}
+{
+}
 
 WheelManager::~WheelManager()
 {
@@ -95,6 +99,12 @@ void WheelManager::start()
     active.store(true);
     std::cout << "Scanning for wheels..." << std::endl;
     thread = std::thread(&WheelManager::run, this);
+    if (telemetryMode)
+    {
+        std::thread telemetryThread =
+            std::thread(&WheelManager::telemetry, this);
+        telemetryThread.detach();
+    }
 }
 
 // sets flag to stop thread
@@ -122,4 +132,39 @@ void WheelManager::stop()
 bool WheelManager::running()
 {
     return active.load();
+}
+
+void WheelManager::telemetry()
+{
+    const int telemetryLines = 4;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    COORD pos;
+    while (active.load())
+    {
+        // record cursor position
+        if (GetConsoleScreenBufferInfo(hConsole, &csbi))
+        {
+            pos = csbi.dwCursorPosition;
+        }
+        // print telemetry for each wheel
+        for (int i = 0; i < wheels.size(); i++)
+        {
+            auto reading = wheels[i]->getRacingWheel().GetCurrentReading();
+            printf("\rSteering: %7.4lf\n\rThrottle: %6.4lf\n\rBrake: "
+                   "%6.4lf\n\rButtons: %4d",
+                   reading.Wheel, reading.Throttle, reading.Brake,
+                   (int)reading.Buttons);
+        }
+        // move cursor back to start
+        std::cout << std::flush;
+        SetConsoleCursorPosition(hConsole, pos);
+
+        // sleep until next reading
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(TELEMETRY_DELAY_MS));
+    }
+    // move cursor past output on exit
+    pos.Y += wheels.size() * telemetryLines;
+    SetConsoleCursorPosition(hConsole, pos);
 }

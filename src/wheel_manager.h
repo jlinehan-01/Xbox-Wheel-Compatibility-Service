@@ -41,18 +41,20 @@ class WheelManager
 {
   private:
     static const DWORD REFRESH_DELAY_MS;
+    static const DWORD TELEMETRY_DELAY_MS;
     static const int MAX_WHEELS;
     static const int WHEEL_NOT_FOUND;
 
     std::atomic<bool> active;
     std::vector<std::unique_ptr<Wheel>> wheels;
     std::thread thread;
+    bool telemetryMode;
 
     // scans for racing wheels
     void run();
 
   public:
-    WheelManager();
+    WheelManager(bool telemetry);
     ~WheelManager();
     // starts thread scanning for wheels
     void start();
@@ -60,6 +62,8 @@ class WheelManager
     void stop();
     // returns if the wheel manager is running
     bool running();
+    // prints wheel input to console
+    void telemetry();
 };
 
 #endif

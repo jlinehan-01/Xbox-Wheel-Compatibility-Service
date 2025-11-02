@@ -37,10 +37,39 @@ BOOL WINAPI controlHandler(DWORD signal);
 
 int main(int argc, char **argv)
 {
+    bool telemetry = false;
+    // parse command line arguments
+    for (int i = 1; i < argc; i++)
+    {
+        std::string arg = argv[i];
+        if (arg == "-t")
+        {
+            telemetry = true;
+        }
+        else
+        {
+            // print help message
+            std::cout << "Usage: " << argv[0] << " [OPTIONS]" << std::endl
+                      << std::endl
+                      << "Options:" << std::endl
+                      << "-h Show this help message and exit" << std::endl
+                      << "-t Print wheel input data to console" << std::endl;
+            if (arg == "-h")
+            {
+                exit(EXIT_SUCCESS);
+            }
+            else
+            {
+                exit(EXIT_FAILURE);
+            }
+        };
+    }
+
     std::cout << "Initialising..." << std::endl;
-    WheelManager wheelManager;
+    WheelManager wheelManager(telemetry);
     g_wheelManager = &wheelManager;
 
+    // set control handler
     if (!SetConsoleCtrlHandler(controlHandler, TRUE))
     {
         std::cerr << "unable to set control handler" << std::endl;
@@ -56,6 +85,7 @@ int main(int argc, char **argv)
             std::chrono::milliseconds(SLEEP_DURATION_MS));
     }
 
+    // wait for shutdown to complete
     while (!g_shutdownComplete.load())
     {
         std::this_thread::sleep_for(
