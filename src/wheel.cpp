@@ -35,6 +35,81 @@ Wheel::~Wheel()
     stop();
 }
 
+// parses button input from a RacingWheel into text
+std::string Wheel::parseButtons(RacingWheelButtons wheelButtons)
+{
+    std::string buttons;
+    // add each button to string
+    if ((wheelButtons & RacingWheelButtons::DPadUp) ==
+        RacingWheelButtons::DPadUp)
+    {
+        buttons += "DPadUp, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::DPadDown) ==
+        RacingWheelButtons::DPadDown)
+    {
+        buttons += "DPadDown, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::DPadLeft) ==
+        RacingWheelButtons::DPadLeft)
+    {
+        buttons += "DPadLeft, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::DPadRight) ==
+        RacingWheelButtons::DPadRight)
+    {
+        buttons += "DPadRight, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::PreviousGear) ==
+        RacingWheelButtons::PreviousGear)
+    {
+        buttons += "LB, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::NextGear) ==
+        RacingWheelButtons::NextGear)
+    {
+        buttons += "RB, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button1) ==
+        RacingWheelButtons::Button1)
+    {
+        buttons += "Start, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button2) ==
+        RacingWheelButtons::Button2)
+    {
+        buttons += "Back, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button3) ==
+        RacingWheelButtons::Button3)
+    {
+        buttons += "A, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button4) ==
+        RacingWheelButtons::Button4)
+    {
+        buttons += "B, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button5) ==
+        RacingWheelButtons::Button5)
+    {
+        buttons += "X, ";
+    }
+    if ((wheelButtons & RacingWheelButtons::Button6) ==
+        RacingWheelButtons::Button6)
+    {
+        buttons += "Y, ";
+    }
+
+    // remove last comma
+    if (!buttons.empty())
+    {
+        buttons.pop_back();
+        buttons.pop_back();
+    }
+    return buttons;
+}
+
 // reads and injects input from wheel
 void Wheel::run()
 {
@@ -64,6 +139,7 @@ void Wheel::start()
     std::cout << "Wheel connected" << std::endl;
     thread = std::thread(&Wheel::run, this);
 }
+
 // sets flag to stop thread
 void Wheel::stop()
 {

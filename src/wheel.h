@@ -29,7 +29,6 @@
 #include <iostream>
 #include <thread>
 #include <windows.h>
-#include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Gaming.Input.h>
 
 using namespace winrt;
@@ -52,6 +51,8 @@ class Wheel
     ~Wheel();
     // returns the racingWheel associated with a wheel object
     RacingWheel getRacingWheel();
+    // parses button input from a RacingWheel into a usable format for gamepads
+    static std::string parseButtons(RacingWheelButtons wheelButtons);
     // starts thread scanning for wheels
     void start();
     // sets flag to stop thread

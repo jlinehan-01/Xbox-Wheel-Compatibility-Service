@@ -151,10 +151,11 @@ void WheelManager::telemetry()
         for (int i = 0; i < wheels.size(); i++)
         {
             auto reading = wheels[i]->getRacingWheel().GetCurrentReading();
-            printf("\rSteering: %7.4lf\n\rThrottle: %6.4lf\n\rBrake: "
-                   "%6.4lf\n\rButtons: %4d",
-                   reading.Wheel, reading.Throttle, reading.Brake,
-                   (int)reading.Buttons);
+            printf("\rSteering: %7.2lf%%\n\rThrottle: %6.2lf%%\n\rBrake: "
+                   "%6.2lf%%\n\rButtons: %-70s\n",
+                   reading.Wheel * 100, reading.Throttle * 100,
+                   reading.Brake * 100,
+                   Wheel::parseButtons(reading.Buttons).c_str());
         }
         // move cursor back to start
         std::cout << std::flush;
