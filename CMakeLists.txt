@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_SYSTEM_VERSION 10.0.19041.0)
+
 project(Xbox-Wheel-Compatibility-Service VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)

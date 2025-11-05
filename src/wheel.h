@@ -30,18 +30,25 @@
 #include <thread>
 #include <windows.h>
 #include <winrt/Windows.Gaming.Input.h>
+#include <winrt/Windows.UI.Input.Preview.Injection.h>
 
 using namespace winrt;
 using namespace Windows::Gaming::Input;
+using namespace Windows::UI::Input::Preview::Injection;
 
 class Wheel
 {
   private:
     static const DWORD REFRESH_DELAY_MS;
+    static const double NO_INPUT;
+    static const DWORD INJECTOR_INIT_DELAY_MS;
 
     RacingWheel racingWheel;
     std::atomic<bool> active;
     std::thread thread;
+    InputInjector injector;
+    uint64_t packetNumber;
+    GamepadReading output;
 
     // reads and injects input from wheel
     void run();
@@ -51,8 +58,8 @@ class Wheel
     ~Wheel();
     // returns the racingWheel associated with a wheel object
     RacingWheel getRacingWheel();
-    // parses button input from a RacingWheel into a usable format for gamepads
-    static std::string parseButtons(RacingWheelButtons wheelButtons);
+    // returns the most recent output of a wheel object
+    GamepadReading getOutput();
     // starts thread scanning for wheels
     void start();
     // sets flag to stop thread

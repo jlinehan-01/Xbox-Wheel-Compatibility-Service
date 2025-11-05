@@ -56,16 +56,28 @@ int main(int argc, char **argv)
                       << "-t Print wheel input data to console" << std::endl;
             if (arg == "-h")
             {
-                exit(EXIT_SUCCESS);
+                return EXIT_SUCCESS;
             }
             else
             {
-                exit(EXIT_FAILURE);
+                return EXIT_FAILURE;
             }
         };
     }
 
     std::cout << "Initialising..." << std::endl;
+
+    try
+    {
+        init_apartment();
+    }
+    catch (const hresult_error &ex)
+    {
+        std::cerr << to_string(ex.message()) << '\n';
+        uninit_apartment();
+        return EXIT_FAILURE;
+    }
+
     WheelManager wheelManager(telemetry);
     g_wheelManager = &wheelManager;
 
@@ -93,6 +105,7 @@ int main(int argc, char **argv)
     }
 
     g_wheelManager = nullptr;
+    uninit_apartment();
 
     return EXIT_SUCCESS;
 }

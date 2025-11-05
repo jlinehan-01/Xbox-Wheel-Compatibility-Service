@@ -25,8 +25,12 @@
 #include "wheel.h"
 
 const DWORD Wheel::REFRESH_DELAY_MS = 1;
+const double Wheel::NO_INPUT = 0.0;
+const DWORD Wheel::INJECTOR_INIT_DELAY_MS = 500;
 
-Wheel::Wheel(RacingWheel racingWheel) : racingWheel(racingWheel), active{false}
+Wheel::Wheel(RacingWheel racingWheel)
+    : racingWheel(racingWheel), active{false}, injector{nullptr},
+      packetNumber{0}
 {
 }
 
@@ -35,86 +39,121 @@ Wheel::~Wheel()
     stop();
 }
 
-// parses button input from a RacingWheel into text
-std::string Wheel::parseButtons(RacingWheelButtons wheelButtons)
-{
-    std::string buttons;
-    // add each button to string
-    if ((wheelButtons & RacingWheelButtons::DPadUp) ==
-        RacingWheelButtons::DPadUp)
-    {
-        buttons += "DPadUp, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::DPadDown) ==
-        RacingWheelButtons::DPadDown)
-    {
-        buttons += "DPadDown, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::DPadLeft) ==
-        RacingWheelButtons::DPadLeft)
-    {
-        buttons += "DPadLeft, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::DPadRight) ==
-        RacingWheelButtons::DPadRight)
-    {
-        buttons += "DPadRight, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::PreviousGear) ==
-        RacingWheelButtons::PreviousGear)
-    {
-        buttons += "LB, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::NextGear) ==
-        RacingWheelButtons::NextGear)
-    {
-        buttons += "RB, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button1) ==
-        RacingWheelButtons::Button1)
-    {
-        buttons += "Start, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button2) ==
-        RacingWheelButtons::Button2)
-    {
-        buttons += "Back, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button3) ==
-        RacingWheelButtons::Button3)
-    {
-        buttons += "A, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button4) ==
-        RacingWheelButtons::Button4)
-    {
-        buttons += "B, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button5) ==
-        RacingWheelButtons::Button5)
-    {
-        buttons += "X, ";
-    }
-    if ((wheelButtons & RacingWheelButtons::Button6) ==
-        RacingWheelButtons::Button6)
-    {
-        buttons += "Y, ";
-    }
-
-    // remove last comma
-    if (!buttons.empty())
-    {
-        buttons.pop_back();
-        buttons.pop_back();
-    }
-    return buttons;
-}
-
 // reads and injects input from wheel
 void Wheel::run()
 {
+    std::cout << "Wheel active" << std::endl;
     while (active.load())
     {
+        if (injector && racingWheel)
+        {
+            try
+            {
+                RacingWheelReading reading = racingWheel.GetCurrentReading();
+
+                // map buttons
+                GamepadButtons buttons = GamepadButtons::None;
+                if ((reading.Buttons & RacingWheelButtons::DPadDown) ==
+                    RacingWheelButtons::DPadDown)
+                {
+                    buttons |= GamepadButtons::DPadDown;
+                }
+                if ((reading.Buttons & RacingWheelButtons::DPadUp) ==
+                    RacingWheelButtons::DPadUp)
+                {
+                    buttons |= GamepadButtons::DPadUp;
+                }
+                if ((reading.Buttons & RacingWheelButtons::DPadLeft) ==
+                    RacingWheelButtons::DPadLeft)
+                {
+                    buttons |= GamepadButtons::DPadLeft;
+                }
+                if ((reading.Buttons & RacingWheelButtons::DPadRight) ==
+                    RacingWheelButtons::DPadRight)
+                {
+                    buttons |= GamepadButtons::DPadRight;
+                }
+                if ((reading.Buttons & RacingWheelButtons::NextGear) ==
+                    RacingWheelButtons::NextGear)
+                {
+                    buttons |= GamepadButtons::RightShoulder;
+                }
+                if ((reading.Buttons & RacingWheelButtons::PreviousGear) ==
+                    RacingWheelButtons::PreviousGear)
+                {
+                    buttons |= GamepadButtons::LeftShoulder;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button1) ==
+                    RacingWheelButtons::Button1)
+                {
+                    buttons |= GamepadButtons::Menu;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button2) ==
+                    RacingWheelButtons::Button2)
+                {
+                    buttons |= GamepadButtons::View;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button3) ==
+                    RacingWheelButtons::Button3)
+                {
+                    buttons |= GamepadButtons::A;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button4) ==
+                    RacingWheelButtons::Button4)
+                {
+                    buttons |= GamepadButtons::B;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button5) ==
+                    RacingWheelButtons::Button5)
+                {
+                    buttons |= GamepadButtons::X;
+                }
+                if ((reading.Buttons & RacingWheelButtons::Button6) ==
+                    RacingWheelButtons::Button6)
+                {
+                    buttons |= GamepadButtons::Y;
+                }
+
+                // compile output
+                GamepadReading newOutput;
+                newOutput.Timestamp = packetNumber++;
+                newOutput.Buttons = buttons;
+                newOutput.LeftTrigger = reading.Brake;
+                newOutput.RightTrigger = reading.Throttle;
+                newOutput.LeftThumbstickX = reading.Wheel;
+                newOutput.LeftThumbstickY = NO_INPUT;
+                newOutput.RightThumbstickX = NO_INPUT;
+                newOutput.RightThumbstickY = NO_INPUT;
+
+                // inject output
+                this->output = newOutput;
+                InjectedInputGamepadInfo gamepadInfo(newOutput);
+                injector.InjectGamepadInput(gamepadInfo);
+            }
+            catch (const hresult_error &ex)
+            {
+                std::cerr << "Injection error: " << to_string(ex.message())
+                          << '\n';
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
+                continue;
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << e.what() << '\n';
+                break;
+            }
+            catch (...)
+            {
+                std::cerr << "Unknown error while injecting input" << '\n';
+                break;
+            }
+        }
+        else
+        {
+            break;
+        }
+
         // sleep until next scan
         std::this_thread::sleep_for(
             std::chrono::milliseconds(REFRESH_DELAY_MS));
@@ -125,7 +164,13 @@ void Wheel::run()
 RacingWheel Wheel::getRacingWheel()
 {
     return this->racingWheel;
-};
+}
+
+// returns the most recent output of a wheel object
+GamepadReading Wheel::getOutput()
+{
+    return this->output;
+}
 
 // starts thread scanning for wheels
 void Wheel::start()
@@ -135,22 +180,43 @@ void Wheel::start()
     {
         return;
     }
-    active.store(true);
     std::cout << "Wheel connected" << std::endl;
+
+    // initialise wheel
+    std::cout << "Initialising wheel..." << std::endl;
+    injector = InputInjector::TryCreate();
+    if (!injector)
+    {
+        std::cerr << "Failed to create injector" << std::endl;
+        stop();
+        return;
+    }
+    injector.InitializeGamepadInjection();
+    // give injector time to stabilise
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
+
+    // run wheel
+    active.store(true);
     thread = std::thread(&Wheel::run, this);
 }
 
 // sets flag to stop thread
 void Wheel::stop()
 {
-    if (active.load())
+    bool expected = true;
+    if (active.compare_exchange_strong(expected, false))
     {
         std::cout << "Wheel disconnected" << std::endl;
-        active.store(false);
         if (thread.joinable())
         {
             thread.join();
         }
+        if (injector)
+        {
+            injector.UninitializeGamepadInjection();
+        }
+        injector = nullptr;
     }
 }
 

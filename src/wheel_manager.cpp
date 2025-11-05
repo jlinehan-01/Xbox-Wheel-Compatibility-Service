@@ -75,7 +75,7 @@ void WheelManager::run()
         // handle disconnected wheels
         for (int i = numWheels - 1; i >= 0; i--)
         {
-            if (wheelMap[i] == WHEEL_NOT_FOUND)
+            if (wheelMap[i] == WHEEL_NOT_FOUND || !wheels[i]->running())
             {
                 wheels[i]->stop();
                 wheels.erase(wheels.begin() + i);
@@ -150,12 +150,91 @@ void WheelManager::telemetry()
         // print telemetry for each wheel
         for (int i = 0; i < wheels.size(); i++)
         {
-            auto reading = wheels[i]->getRacingWheel().GetCurrentReading();
-            printf("\rSteering: %7.2lf%%\n\rThrottle: %6.2lf%%\n\rBrake: "
-                   "%6.2lf%%\n\rButtons: %-70s\n",
-                   reading.Wheel * 100, reading.Throttle * 100,
-                   reading.Brake * 100,
-                   Wheel::parseButtons(reading.Buttons).c_str());
+            if (!wheels[i])
+            {
+                continue;
+            }
+            if (wheels[i]->running())
+            {
+                GamepadReading reading = wheels[i]->getOutput();
+
+                printf(
+                    "\rSteering: %7.2lf%%\n\rThrottle: %6.2lf%%\n\rBrake: "
+                    "%6.2lf%%\n\rButtons: %-70s\n",
+                    reading.LeftThumbstickX * 100, reading.RightTrigger * 100,
+                    reading.LeftTrigger * 100,
+                    // lambda to parse buttons
+                    [](GamepadButtons buttons)
+                    {
+                        std::string buttonsStr;
+                        // add each button to string
+                        if ((buttons & GamepadButtons::DPadUp) ==
+                            GamepadButtons::DPadUp)
+                        {
+                            buttonsStr += "DPadUp, ";
+                        }
+                        if ((buttons & GamepadButtons::DPadDown) ==
+                            GamepadButtons::DPadDown)
+                        {
+                            buttonsStr += "DPadDown, ";
+                        }
+                        if ((buttons & GamepadButtons::DPadLeft) ==
+                            GamepadButtons::DPadLeft)
+                        {
+                            buttonsStr += "DPadLeft, ";
+                        }
+                        if ((buttons & GamepadButtons::DPadRight) ==
+                            GamepadButtons::DPadRight)
+                        {
+                            buttonsStr += "DPadRight, ";
+                        }
+                        if ((buttons & GamepadButtons::LeftShoulder) ==
+                            GamepadButtons::LeftShoulder)
+                        {
+                            buttonsStr += "LB, ";
+                        }
+                        if ((buttons & GamepadButtons::RightShoulder) ==
+                            GamepadButtons::RightShoulder)
+                        {
+                            buttonsStr += "RB, ";
+                        }
+                        if ((buttons & GamepadButtons::Menu) ==
+                            GamepadButtons::Menu)
+                        {
+                            buttonsStr += "Menu, ";
+                        }
+                        if ((buttons & GamepadButtons::View) ==
+                            GamepadButtons::View)
+                        {
+                            buttonsStr += "View, ";
+                        }
+                        if ((buttons & GamepadButtons::A) == GamepadButtons::A)
+                        {
+                            buttonsStr += "A, ";
+                        }
+                        if ((buttons & GamepadButtons::B) == GamepadButtons::B)
+                        {
+                            buttonsStr += "B, ";
+                        }
+                        if ((buttons & GamepadButtons::X) == GamepadButtons::X)
+                        {
+                            buttonsStr += "X, ";
+                        }
+                        if ((buttons & GamepadButtons::Y) == GamepadButtons::Y)
+                        {
+                            buttonsStr += "Y, ";
+                        }
+
+                        // remove last comma
+                        if (!buttonsStr.empty())
+                        {
+                            buttonsStr.pop_back();
+                            buttonsStr.pop_back();
+                        }
+                        return buttonsStr;
+                    }(reading.Buttons)
+                        .c_str());
+            }
         }
         // move cursor back to start
         std::cout << std::flush;

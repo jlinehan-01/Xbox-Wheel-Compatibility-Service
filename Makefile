@@ -29,4 +29,4 @@ format:
 	clang-format -style=file -i src/*.cpp src/*.h
 
 run:
-	cmd /c .\build\bin\Debug\XboxWheelCompatibilityService.exe
+	.\build\bin\Debug\XboxWheelCompatibilityService.exe
