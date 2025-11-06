@@ -19,7 +19,7 @@ all: build
 
 build:
 	cmake -B build -S .
-	cmake --build build
+	cmake --build build --config Debug
 
 clean:
 	del /Q /S build > nul
@@ -30,3 +30,7 @@ format:
 
 run:
 	.\build\bin\Debug\XboxWheelCompatibilityService.exe
+
+release:
+	cmake -B build -S .
+	cmake --build build --config Release

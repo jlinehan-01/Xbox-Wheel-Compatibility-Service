@@ -184,18 +184,28 @@ void Wheel::start()
 
     // initialise wheel
     std::cout << "Initialising wheel..." << std::endl;
-    injector = InputInjector::TryCreate();
-    if (!injector)
+    try
     {
-        std::cerr << "Failed to create injector" << std::endl;
-        stop();
+        injector = InputInjector::TryCreate();
+        if (!injector)
+        {
+            std::cerr << "Failed to create injector" << std::endl;
+            stop();
+            return;
+        }
+        // give injector time to stabilise
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
+        injector.InitializeGamepadInjection();
+    }
+    catch (const hresult_error &ex)
+    {
+        std::cerr << "Failed to initialise injector: "
+                  << to_string(ex.message()) << '\n';
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
         return;
     }
-    injector.InitializeGamepadInjection();
-    // give injector time to stabilise
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
-
     // run wheel
     active.store(true);
     thread = std::thread(&Wheel::run, this);
