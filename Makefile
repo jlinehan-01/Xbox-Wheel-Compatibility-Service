@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-.PHONY: all build clean format run
+.PHONY: all build clean format run release
 all: build
 
 build:
-	cmake -B build -S .
+	cmake -B build -S . -G "Visual Studio 17 2022" -A x64
 	cmake --build build --config Debug
 
 clean:
@@ -32,5 +32,4 @@ run:
 	.\build\bin\Debug\XboxWheelCompatibilityService.exe
 
 release:
-	cmake -B build -S .
 	cmake --build build --config Release
