@@ -42,7 +42,8 @@ Wheel::~Wheel()
 // reads and injects input from wheel
 void Wheel::run()
 {
-    std::cout << "Wheel active" << std::endl;
+    OutputManager &outputManager = OutputManager::getInstance();
+    outputManager.log("Wheel active");
     while (active.load())
     {
         if (injector && racingWheel)
@@ -132,20 +133,20 @@ void Wheel::run()
             }
             catch (const hresult_error &ex)
             {
-                std::cerr << "Injection error: " << to_string(ex.message())
-                          << '\n';
+                outputManager.error("Injection error: " +
+                                    to_string(ex.message()));
                 std::this_thread::sleep_for(
                     std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
                 continue;
             }
             catch (const std::exception &e)
             {
-                std::cerr << e.what() << '\n';
+                outputManager.error(e.what());
                 break;
             }
             catch (...)
             {
-                std::cerr << "Unknown error while injecting input" << '\n';
+                outputManager.error("Unknown error while injecting input");
                 break;
             }
         }
@@ -175,21 +176,22 @@ GamepadReading Wheel::getOutput()
 // starts thread scanning for wheels
 void Wheel::start()
 {
+    OutputManager &outputManager = OutputManager::getInstance();
     // prevent re-running thread if already started
     if (active.load())
     {
         return;
     }
-    std::cout << "Wheel connected" << std::endl;
+    outputManager.log("Wheel connected");
 
     // initialise wheel
-    std::cout << "Initialising wheel..." << std::endl;
+    outputManager.log("Initialising wheel...");
     try
     {
         injector = InputInjector::TryCreate();
         if (!injector)
         {
-            std::cerr << "Failed to create injector" << std::endl;
+            outputManager.error("Failed to create injector");
             stop();
             return;
         }
@@ -200,8 +202,8 @@ void Wheel::start()
     }
     catch (const hresult_error &ex)
     {
-        std::cerr << "Failed to initialise injector: "
-                  << to_string(ex.message()) << '\n';
+        outputManager.error("Failed to initialise injector: " +
+                            to_string(ex.message()));
         std::this_thread::sleep_for(
             std::chrono::milliseconds(INJECTOR_INIT_DELAY_MS));
         return;
@@ -217,7 +219,7 @@ void Wheel::stop()
     bool expected = true;
     if (active.compare_exchange_strong(expected, false))
     {
-        std::cout << "Wheel disconnected" << std::endl;
+        OutputManager::getInstance().log("Wheel disconnected");
         if (thread.joinable())
         {
             thread.join();

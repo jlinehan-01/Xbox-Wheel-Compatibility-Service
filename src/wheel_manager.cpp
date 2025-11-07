@@ -97,7 +97,7 @@ void WheelManager::start()
     }
 
     active.store(true);
-    std::cout << "Scanning for wheels..." << std::endl;
+    OutputManager::getInstance().log("Scanning for wheels...");
     thread = std::thread(&WheelManager::run, this);
     if (telemetryMode)
     {
@@ -136,17 +136,13 @@ bool WheelManager::running()
 
 void WheelManager::telemetry()
 {
-    const int telemetryLines = 4;
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    COORD pos;
+    OutputManager &outputManager = OutputManager::getInstance();
+    std::stringstream ss;
     while (active.load())
     {
-        // record cursor position
-        if (GetConsoleScreenBufferInfo(hConsole, &csbi))
-        {
-            pos = csbi.dwCursorPosition;
-        }
+        std::vector<std::string> output;
+        // add newline before telemetry
+        output.push_back("");
         // print telemetry for each wheel
         for (int i = 0; i < wheels.size(); i++)
         {
@@ -156,95 +152,110 @@ void WheelManager::telemetry()
             }
             if (wheels[i]->running())
             {
+                ss << "Wheel " << i + 1;
+                output.push_back(ss.str());
+                ss.str("");
                 GamepadReading reading = wheels[i]->getOutput();
-
-                printf(
-                    "\rSteering: %7.2lf%%\n\rThrottle: %6.2lf%%\n\rBrake: "
-                    "%6.2lf%%\n\rButtons: %-70s\n",
-                    reading.LeftThumbstickX * 100, reading.RightTrigger * 100,
-                    reading.LeftTrigger * 100,
+                ss << "Steering: " << std::fixed << std::setw(7)
+                   << std::showpoint << std::setprecision(2)
+                   << reading.LeftThumbstickX * 100 << "%";
+                output.push_back(ss.str());
+                ss.str("");
+                ss << "Throttle: " << std::fixed << std::setw(7)
+                   << std::showpoint << std::setprecision(2)
+                   << reading.RightTrigger * 100 << "%";
+                output.push_back(ss.str());
+                ss.str("");
+                ss << "Brake: " << std::fixed << std::setw(10) << std::showpoint
+                   << std::setprecision(2) << reading.LeftTrigger * 100 << "%";
+                output.push_back(ss.str());
+                ss.str("");
+                ss << "Buttons: " <<
                     // lambda to parse buttons
-                    [](GamepadButtons buttons)
-                    {
-                        std::string buttonsStr;
-                        // add each button to string
-                        if ((buttons & GamepadButtons::DPadUp) ==
-                            GamepadButtons::DPadUp)
+                    (
+                        [](GamepadButtons buttons)
                         {
-                            buttonsStr += "DPadUp, ";
-                        }
-                        if ((buttons & GamepadButtons::DPadDown) ==
-                            GamepadButtons::DPadDown)
-                        {
-                            buttonsStr += "DPadDown, ";
-                        }
-                        if ((buttons & GamepadButtons::DPadLeft) ==
-                            GamepadButtons::DPadLeft)
-                        {
-                            buttonsStr += "DPadLeft, ";
-                        }
-                        if ((buttons & GamepadButtons::DPadRight) ==
-                            GamepadButtons::DPadRight)
-                        {
-                            buttonsStr += "DPadRight, ";
-                        }
-                        if ((buttons & GamepadButtons::LeftShoulder) ==
-                            GamepadButtons::LeftShoulder)
-                        {
-                            buttonsStr += "LB, ";
-                        }
-                        if ((buttons & GamepadButtons::RightShoulder) ==
-                            GamepadButtons::RightShoulder)
-                        {
-                            buttonsStr += "RB, ";
-                        }
-                        if ((buttons & GamepadButtons::Menu) ==
-                            GamepadButtons::Menu)
-                        {
-                            buttonsStr += "Menu, ";
-                        }
-                        if ((buttons & GamepadButtons::View) ==
-                            GamepadButtons::View)
-                        {
-                            buttonsStr += "View, ";
-                        }
-                        if ((buttons & GamepadButtons::A) == GamepadButtons::A)
-                        {
-                            buttonsStr += "A, ";
-                        }
-                        if ((buttons & GamepadButtons::B) == GamepadButtons::B)
-                        {
-                            buttonsStr += "B, ";
-                        }
-                        if ((buttons & GamepadButtons::X) == GamepadButtons::X)
-                        {
-                            buttonsStr += "X, ";
-                        }
-                        if ((buttons & GamepadButtons::Y) == GamepadButtons::Y)
-                        {
-                            buttonsStr += "Y, ";
-                        }
+                            std::string buttonsStr;
+                            // add each button to string
+                            if ((buttons & GamepadButtons::DPadUp) ==
+                                GamepadButtons::DPadUp)
+                            {
+                                buttonsStr += "DPadUp, ";
+                            }
+                            if ((buttons & GamepadButtons::DPadDown) ==
+                                GamepadButtons::DPadDown)
+                            {
+                                buttonsStr += "DPadDown, ";
+                            }
+                            if ((buttons & GamepadButtons::DPadLeft) ==
+                                GamepadButtons::DPadLeft)
+                            {
+                                buttonsStr += "DPadLeft, ";
+                            }
+                            if ((buttons & GamepadButtons::DPadRight) ==
+                                GamepadButtons::DPadRight)
+                            {
+                                buttonsStr += "DPadRight, ";
+                            }
+                            if ((buttons & GamepadButtons::LeftShoulder) ==
+                                GamepadButtons::LeftShoulder)
+                            {
+                                buttonsStr += "LB, ";
+                            }
+                            if ((buttons & GamepadButtons::RightShoulder) ==
+                                GamepadButtons::RightShoulder)
+                            {
+                                buttonsStr += "RB, ";
+                            }
+                            if ((buttons & GamepadButtons::Menu) ==
+                                GamepadButtons::Menu)
+                            {
+                                buttonsStr += "Menu, ";
+                            }
+                            if ((buttons & GamepadButtons::View) ==
+                                GamepadButtons::View)
+                            {
+                                buttonsStr += "View, ";
+                            }
+                            if ((buttons & GamepadButtons::A) ==
+                                GamepadButtons::A)
+                            {
+                                buttonsStr += "A, ";
+                            }
+                            if ((buttons & GamepadButtons::B) ==
+                                GamepadButtons::B)
+                            {
+                                buttonsStr += "B, ";
+                            }
+                            if ((buttons & GamepadButtons::X) ==
+                                GamepadButtons::X)
+                            {
+                                buttonsStr += "X, ";
+                            }
+                            if ((buttons & GamepadButtons::Y) ==
+                                GamepadButtons::Y)
+                            {
+                                buttonsStr += "Y, ";
+                            }
 
-                        // remove last comma
-                        if (!buttonsStr.empty())
-                        {
-                            buttonsStr.pop_back();
-                            buttonsStr.pop_back();
-                        }
-                        return buttonsStr;
-                    }(reading.Buttons)
-                        .c_str());
+                            // remove last comma
+                            if (!buttonsStr.empty())
+                            {
+                                buttonsStr.pop_back();
+                                buttonsStr.pop_back();
+                            }
+                            return buttonsStr;
+                        })(reading.Buttons);
+                output.push_back(ss.str());
+                ss.str("");
+                // add new line after each wheel
+                output.push_back("");
             }
         }
-        // move cursor back to start
-        std::cout << std::flush;
-        SetConsoleCursorPosition(hConsole, pos);
+        outputManager.printTelemetry(output);
 
         // sleep until next reading
         std::this_thread::sleep_for(
             std::chrono::milliseconds(TELEMETRY_DELAY_MS));
     }
-    // move cursor past output on exit
-    pos.Y += wheels.size() * telemetryLines;
-    SetConsoleCursorPosition(hConsole, pos);
 }

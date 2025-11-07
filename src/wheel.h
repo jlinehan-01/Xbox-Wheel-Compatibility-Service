@@ -32,6 +32,8 @@
 #include <winrt/Windows.Gaming.Input.h>
 #include <winrt/Windows.UI.Input.Preview.Injection.h>
 
+#include "output_manager.h"
+
 using namespace winrt;
 using namespace Windows::Gaming::Input;
 using namespace Windows::UI::Input::Preview::Injection;

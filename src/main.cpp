@@ -26,6 +26,7 @@
 #include <iostream>
 #include <windows.h>
 
+#include "output_manager.h"
 #include "wheel_manager.h"
 
 static const DWORD SLEEP_DURATION_MS = 100;
@@ -65,7 +66,8 @@ int main(int argc, char **argv)
         };
     }
 
-    std::cout << "Initialising..." << std::endl;
+    OutputManager &outputManager = OutputManager::getInstance();
+    outputManager.log("Initialising...");
 
     try
     {
@@ -73,7 +75,7 @@ int main(int argc, char **argv)
     }
     catch (const hresult_error &ex)
     {
-        std::cerr << to_string(ex.message()) << '\n';
+        outputManager.error(to_string(ex.message()));
         uninit_apartment();
         return EXIT_FAILURE;
     }
@@ -84,9 +86,9 @@ int main(int argc, char **argv)
     // set control handler
     if (!SetConsoleCtrlHandler(controlHandler, TRUE))
     {
-        std::cerr << "unable to set control handler" << std::endl;
+        outputManager.error("unable to set control handler");
     }
-    std::cout << "Done" << std::endl;
+    outputManager.log("Done");
 
     wheelManager.start();
 
@@ -114,7 +116,7 @@ BOOL WINAPI controlHandler(DWORD signal)
 {
     if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT)
     {
-        std::cout << "Shutting down..." << std::endl;
+        OutputManager::getInstance().log("Shutting down...");
         if (g_wheelManager)
         {
             g_wheelManager->stop();

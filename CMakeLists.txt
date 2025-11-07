@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_SYSTEM_VERSION 10.0.19041.0)
 
-project(Xbox-Wheel-Compatibility-Service VERSION 1.0.0 LANGUAGES CXX)
+project(Xbox-Wheel-Compatibility-Service VERSION 1.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
