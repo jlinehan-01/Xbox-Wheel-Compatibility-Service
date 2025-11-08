@@ -58,6 +58,8 @@ class OutputManager
     void error(std::string message);
     // prints telemetry data to the screen
     void printTelemetry(std::vector<std::string> lines);
+    // clears telemetry output from screen
+    void clearTelemetry();
 };
 
 #endif

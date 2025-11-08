@@ -113,3 +113,19 @@ void OutputManager::printTelemetry(std::vector<std::string> lines)
     }
     std::cout << std::flush;
 }
+
+// clears telemetry output from screen
+void OutputManager::clearTelemetry()
+{
+    std::lock_guard<std::mutex> lock(outputMutex);
+    // clear telemetry output
+    SetConsoleCursorPosition(hConsole, outputPos);
+    COORD currentPos = outputPos;
+    while (currentPos.Y < maxPos.Y)
+    {
+        std::cout << std::setw(OUTPUT_WIDTH) << "" << std::endl;
+        currentPos.Y++;
+    }
+    // return cursor to correct position
+    SetConsoleCursorPosition(hConsole, outputPos);
+}

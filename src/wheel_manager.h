@@ -50,13 +50,16 @@ class WheelManager
     std::atomic<bool> active;
     std::vector<std::unique_ptr<Wheel>> wheels;
     std::thread thread;
-    bool telemetryMode;
+    std::thread telemetryThread;
+    std::atomic<bool> telemetryActive;
 
     // scans for racing wheels
     void run();
+    // prints wheel input to console
+    void telemetry();
 
   public:
-    WheelManager(bool telemetry);
+    WheelManager();
     ~WheelManager();
     // starts thread scanning for wheels
     void start();
@@ -64,8 +67,12 @@ class WheelManager
     void stop();
     // returns if the wheel manager is running
     bool running();
-    // prints wheel input to console
-    void telemetry();
+    // starts telemetry thread
+    void startTelemetry();
+    // stops telemetry thread
+    void stopTelemetry();
+    // toggles telemetry thread on/off
+    void toggleTelemetry();
 };
 
 #endif

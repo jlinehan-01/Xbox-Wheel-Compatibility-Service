@@ -33,8 +33,10 @@ static const DWORD SLEEP_DURATION_MS = 100;
 
 static WheelManager *g_wheelManager = nullptr;
 static std::atomic<bool> g_shutdownComplete{false};
+static HHOOK g_keyboardHook = nullptr;
 
 BOOL WINAPI controlHandler(DWORD signal);
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 int main(int argc, char **argv)
 {
@@ -80,23 +82,49 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    WheelManager wheelManager(telemetry);
+    WheelManager wheelManager;
     g_wheelManager = &wheelManager;
+    if (telemetry)
+    {
+        wheelManager.startTelemetry();
+    }
 
     // set control handler
     if (!SetConsoleCtrlHandler(controlHandler, TRUE))
     {
         outputManager.error("unable to set control handler");
     }
-    outputManager.log("Done");
+
+    // Install keyboard hook
+    g_keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc,
+                                      GetModuleHandle(nullptr), 0);
+    if (!g_keyboardHook)
+    {
+        outputManager.error("Failed to install keyboard hook");
+    }
 
     wheelManager.start();
+    outputManager.log("Done");
 
-    // keep program running while other threads run
+    MSG msg;
     while (wheelManager.running())
     {
+        // Process all pending messages
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
         std::this_thread::sleep_for(
             std::chrono::milliseconds(SLEEP_DURATION_MS));
+    }
+
+    // Cleanup hook
+    if (g_keyboardHook)
+    {
+        UnhookWindowsHookEx(g_keyboardHook);
+        g_keyboardHook = nullptr;
     }
 
     // wait for shutdown to complete
@@ -112,6 +140,7 @@ int main(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 
+// stops wheel manager on program exit
 BOOL WINAPI controlHandler(DWORD signal)
 {
     if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT)
@@ -125,4 +154,21 @@ BOOL WINAPI controlHandler(DWORD signal)
         return TRUE;
     }
     return FALSE;
+}
+
+// handles keyboard input
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode >= 0 && wParam == WM_KEYDOWN)
+    {
+        KBDLLHOOKSTRUCT *kbd = (KBDLLHOOKSTRUCT *)lParam;
+        if (kbd->vkCode == 'T')
+        {
+            if (g_wheelManager)
+            {
+                g_wheelManager->toggleTelemetry();
+            }
+        }
+    }
+    return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
 }

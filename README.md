@@ -8,20 +8,26 @@ Multiple wheel inputs should be supported, however this feature has not been tes
 
 ## Table of Contents
 - [1 - Usage](#1---usage)
-  - [1.1 - Options](#11---options)
+  - [1.1 - Controls](#11---controls)
+  - [1.2 - Options](#12---options)
 - [2 - Known Issues](#2---known-issues)
   - [2.1 - Crashing](#21---crashing)
 
 
 ## 1 - Usage
 
-WheelCompatibilityService.exe \[OPTIONS\]
+XboxWheelCompatibilityService.exe \[OPTIONS\]
 
-### 1.1 - Options
-| Option | Name      | Description              |
-|--------|-----------|--------------------------|
-| -h     | Help      | Displays usage help      |
-| -t     | Telemetry | Prints output from wheel |
+### 1.1 - Controls
+
+Press T to toggle telemetry on/off
+
+### 1.2 - Options
+
+| Option | Name      | Description                          |
+|--------|-----------|--------------------------------------|
+| -h     | Help      | Displays usage help                  |
+| -t     | Telemetry | Starts program with telemetry active |
 
 ## 2 - Known Issues
 

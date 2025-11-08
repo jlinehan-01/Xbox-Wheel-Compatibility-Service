@@ -29,8 +29,7 @@ const DWORD WheelManager::TELEMETRY_DELAY_MS = 100;
 const int WheelManager::MAX_WHEELS = 8;
 const int WheelManager::WHEEL_NOT_FOUND = -1;
 
-WheelManager::WheelManager(bool telemetryMode)
-    : active{false}, wheels{}, telemetryMode{telemetryMode}
+WheelManager::WheelManager() : active{false}, wheels{}, telemetryActive{false}
 {
 }
 
@@ -87,58 +86,12 @@ void WheelManager::run()
     }
 }
 
-// starts thread scanning for wheels
-void WheelManager::start()
-{
-    // prevent running if already active
-    if (active.load())
-    {
-        return;
-    }
-
-    active.store(true);
-    OutputManager::getInstance().log("Scanning for wheels...");
-    thread = std::thread(&WheelManager::run, this);
-    if (telemetryMode)
-    {
-        std::thread telemetryThread =
-            std::thread(&WheelManager::telemetry, this);
-        telemetryThread.detach();
-    }
-}
-
-// sets flag to stop thread
-void WheelManager::stop()
-{
-    if (active.load())
-    {
-        active.store(false);
-        for (int i = 0; i < wheels.size(); i++)
-        {
-            if (wheels[i]->running())
-            {
-                wheels[i]->stop();
-            }
-        }
-        if (thread.joinable())
-        {
-            thread.join();
-        }
-        wheels.clear();
-    }
-}
-
-// returns if the wheel manager is running
-bool WheelManager::running()
-{
-    return active.load();
-}
-
+// prints wheel input to console
 void WheelManager::telemetry()
 {
     OutputManager &outputManager = OutputManager::getInstance();
     std::stringstream ss;
-    while (active.load())
+    while (telemetryActive.load())
     {
         std::vector<std::string> output;
         // add newline before telemetry
@@ -258,4 +211,74 @@ void WheelManager::telemetry()
         std::this_thread::sleep_for(
             std::chrono::milliseconds(TELEMETRY_DELAY_MS));
     }
+    outputManager.clearTelemetry();
+}
+
+// starts thread scanning for wheels
+void WheelManager::start()
+{
+    // prevent running if already active
+    if (active.load())
+    {
+        return;
+    }
+
+    active.store(true);
+    OutputManager::getInstance().log("Scanning for wheels...");
+    thread = std::thread(&WheelManager::run, this);
+}
+
+// sets flag to stop thread
+void WheelManager::stop()
+{
+    stopTelemetry();
+    if (active.load())
+    {
+        active.store(false);
+        for (int i = 0; i < wheels.size(); i++)
+        {
+            if (wheels[i]->running())
+            {
+                wheels[i]->stop();
+            }
+        }
+        if (thread.joinable())
+        {
+            thread.join();
+        }
+        wheels.clear();
+    }
+}
+
+// returns if the wheel manager is running
+bool WheelManager::running()
+{
+    return active.load();
+}
+
+// starts telemetry thread
+void WheelManager::startTelemetry()
+{
+    if (telemetryActive.load())
+    {
+        return;
+    }
+    telemetryActive.store(true);
+    telemetryThread = std::thread(&WheelManager::telemetry, this);
+}
+
+// stops telemetry thread
+void WheelManager::stopTelemetry()
+{
+    telemetryActive.store(false);
+    if (telemetryThread.joinable())
+    {
+        telemetryThread.join();
+    }
+}
+
+// toggles telemetry thread on/off
+void WheelManager::toggleTelemetry()
+{
+    telemetryActive.load() ? stopTelemetry() : startTelemetry();
 }
