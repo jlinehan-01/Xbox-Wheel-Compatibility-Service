@@ -43,6 +43,7 @@ OutputManager::~OutputManager()
 {
     // return cursor to next line
     std::lock_guard<std::mutex> lock(outputMutex);
+    outputPos.X = 0;
     SetConsoleCursorPosition(hConsole, outputPos);
 };
 

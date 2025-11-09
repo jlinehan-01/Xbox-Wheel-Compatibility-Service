@@ -48,3 +48,6 @@
 
 #cmake
 build
+
+# installer scripts
+*.iss

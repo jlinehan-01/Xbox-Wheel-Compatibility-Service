@@ -33,4 +33,4 @@ Press T to toggle telemetry on/off
 
 ### 2.1 - Crashing
 
-The program sometimes crashes shortly after a wheel is initialised. This is caused by the first few calls to InjectGamepadInput in the [Wheel class](src/wheel.cpp). InitializeGamepadInjection was deliberately not called in the original project, but seems to reduce the frequency of crashing in this manner. I have not been able to catch any errors from InjectGamepadInput in a try/catch block. Re-running the program seems to be an appropriate workaround; following a crash the program has worked successfully within 2-3 attempts.
+The program sometimes crashes shortly after a wheel is initialised. This is caused by the first few calls to InjectGamepadInput in the [Wheel class](src/wheel.cpp). InitializeGamepadInjection was deliberately not called in the original project, but seems to reduce the frequency of crashing in this manner. I have not been able to catch any errors from InjectGamepadInput in a try/catch block. Re-running the program seems to be an appropriate workaround; following a crash the program has worked successfully within 2-3 attempts. This issue doesn't seem to occur in the Release build.

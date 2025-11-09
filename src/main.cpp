@@ -33,10 +33,8 @@ static const DWORD SLEEP_DURATION_MS = 100;
 
 static WheelManager *g_wheelManager = nullptr;
 static std::atomic<bool> g_shutdownComplete{false};
-static HHOOK g_keyboardHook = nullptr;
 
 BOOL WINAPI controlHandler(DWORD signal);
-LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 int main(int argc, char **argv)
 {
@@ -84,10 +82,6 @@ int main(int argc, char **argv)
 
     WheelManager wheelManager;
     g_wheelManager = &wheelManager;
-    if (telemetry)
-    {
-        wheelManager.startTelemetry();
-    }
 
     // set control handler
     if (!SetConsoleCtrlHandler(controlHandler, TRUE))
@@ -95,37 +89,42 @@ int main(int argc, char **argv)
         outputManager.error("unable to set control handler");
     }
 
-    // Install keyboard hook
-    g_keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc,
-                                      GetModuleHandle(nullptr), 0);
-    if (!g_keyboardHook)
+    outputManager.log("Done");
+    wheelManager.start();
+    if (telemetry)
     {
-        outputManager.error("Failed to install keyboard hook");
+        wheelManager.startTelemetry();
     }
 
-    wheelManager.start();
-    outputManager.log("Done");
-
     MSG msg;
+    HANDLE hConsole = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode;
+    GetConsoleMode(hConsole, &mode);
+    SetConsoleMode(hConsole, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
     while (wheelManager.running())
     {
-        // Process all pending messages
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        DWORD numEvents;
+        if (GetNumberOfConsoleInputEvents(hConsole, &numEvents) &&
+            numEvents > 0)
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            INPUT_RECORD inputRecord;
+            DWORD numRead;
+            if (ReadConsoleInput(hConsole, &inputRecord, 1, &numRead))
+            {
+                if (inputRecord.EventType == KEY_EVENT &&
+                    inputRecord.Event.KeyEvent.bKeyDown &&
+                    inputRecord.Event.KeyEvent.wVirtualKeyCode == 'T')
+                {
+                    wheelManager.toggleTelemetry();
+                }
+            }
         }
 
         std::this_thread::sleep_for(
             std::chrono::milliseconds(SLEEP_DURATION_MS));
     }
 
-    // Cleanup hook
-    if (g_keyboardHook)
-    {
-        UnhookWindowsHookEx(g_keyboardHook);
-        g_keyboardHook = nullptr;
-    }
+    SetConsoleMode(hConsole, mode);
 
     // wait for shutdown to complete
     while (!g_shutdownComplete.load())
@@ -154,21 +153,4 @@ BOOL WINAPI controlHandler(DWORD signal)
         return TRUE;
     }
     return FALSE;
-}
-
-// handles keyboard input
-LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-    if (nCode >= 0 && wParam == WM_KEYDOWN)
-    {
-        KBDLLHOOKSTRUCT *kbd = (KBDLLHOOKSTRUCT *)lParam;
-        if (kbd->vkCode == 'T')
-        {
-            if (g_wheelManager)
-            {
-                g_wheelManager->toggleTelemetry();
-            }
-        }
-    }
-    return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
 }
